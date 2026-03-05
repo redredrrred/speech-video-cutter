@@ -220,5 +220,98 @@ def info(input_video):
         sys.exit(1)
 
 
+@main.command()
+@click.argument('input_video', type=click.Path(exists=True))
+@click.option('--format', default='html', type=click.Choice(['html', 'edl', 'xml', 'json']),
+              help='导出格式')
+@click.option('--output', '-o', help='输出文件路径')
+@click.option('--similarity', default=0.7, type=float, help='相似度阈值')
+@click.option('--model', default='base', type=click.Choice(['tiny', 'base', 'small', 'medium', 'large']),
+              help='Whisper模型大小')
+def export(input_video, format, output, similarity, model):
+    """
+    导出可编辑的项目文件
+
+    示例:
+        ai-cutter export input.mp4 --format html
+        ai-cutter export input.mp4 --format xml -o project.xml
+        ai-cutter export input.mp4 --format edl -o project.edl
+    """
+    try:
+        from blender_exporter import BlenderExporter
+
+        if output is None:
+            input_path = Path(input_video)
+            if format == 'html':
+                output = str(input_path.parent / f"{input_path.stem}_editor.html")
+            elif format == 'xml':
+                output = str(input_path.parent / f"{input_path.stem}_project.xml")
+            elif format == 'edl':
+                output = str(input_path.parent / f"{input_path.stem}_project.edl")
+            else:
+                output = str(input_path.parent / f"{input_path.stem}_timeline.json")
+
+        click.echo(f"[*] 正在处理: {input_video}")
+        click.echo(f"[*] 格式: {format}")
+        click.echo(f"[*] 输出: {output}\n")
+
+        # 步骤1: 语音识别
+        click.echo("[*] 步骤 1/3: 语音识别...")
+        recognizer = SpeechRecognizer(model_size=model)
+        segments = recognizer.transcribe_video(input_video)
+        click.echo(f"   [OK] 识别完成，共 {len(segments)} 个片段\n")
+
+        # 步骤2: 重复检测
+        click.echo("[*] 步骤 2/3: 检测重复内容...")
+        detector = RepeatDetector(similarity_threshold=similarity)
+        repeats = detector.detect_repeats(segments)
+        click.echo(f"   [OK] 检测到 {len(repeats)} 处重复\n")
+
+        # 步骤3: 生成时间线
+        click.echo("[*] 步骤 3/3: 生成时间线...")
+        editor = TimelineEditor()
+        timeline = editor.generate_edit_timeline(segments, repeats, "last")
+        timeline = editor.optimize_timeline(timeline)
+
+        stats = editor.calculate_timeline_stats(timeline)
+        click.echo(f"   [OK] 保留时长: {stats['keep_duration']:.1f}秒 ({stats['keep_ratio']:.1f}%)")
+        click.echo(f"   [OK] 剪掉时长: {stats['cut_duration']:.1f}秒 ({stats['cut_count']}处)\n")
+
+        # 导出
+        exporter = BlenderExporter()
+
+        if format == 'html':
+            click.echo(f"[*] 导出交互式HTML...")
+            exporter.create_interactive_html(input_video, timeline, repeats, output)
+            click.echo(f"   [OK] HTML已创建: {output}")
+            click.echo(f"\n在浏览器中打开该文件即可查看和调整剪辑")
+
+        elif format == 'edl':
+            click.echo(f"[*] 导出EDL文件...")
+            exporter.export_to_edl(timeline, output)
+            click.echo(f"   [OK] EDL已创建: {output}")
+            click.echo(f"\n可以在DaVinci Resolve中导入此文件")
+            click.echo(f"File → Import Timeline → 选择EDL文件")
+
+        elif format == 'xml':
+            click.echo(f"[*] 导出FCPXML文件...")
+            exporter.export_to_xml(input_video, timeline, output)
+            click.echo(f"   [OK] XML已创建: {output}")
+            click.echo(f"\n可以在Final Cut Pro/DaVinci Resolve中导入此文件")
+
+        elif format == 'json':
+            click.echo(f"[*] 导出JSON文件...")
+            with open(output, 'w', encoding='utf-8') as f:
+                json.dump({'timeline': timeline, 'repeats': repeats}, f, indent=2, ensure_ascii=False)
+            click.echo(f"   [OK] JSON已创建: {output}")
+
+        click.echo(f"\n完成！")
+
+    except Exception as e:
+        click.echo(f"\n✗ 错误: {e}", err=True)
+        logger.exception("导出失败")
+        sys.exit(1)
+
+
 if __name__ == '__main__':
     main()

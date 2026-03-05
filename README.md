@@ -10,6 +10,8 @@
 - 🎯 **多种策略**：支持多种保留策略（最后版本/最长版本/最流畅版本）
 - 📝 **字幕生成**：可单独生成SRT/VTT字幕文件
 - 📊 **详细报告**：生成剪辑报告，让你清楚了解哪些内容被剪掉
+- 🎬 **专业导出**：支持导出到DaVinci Resolve、Final Cut Pro等专业软件
+- 🌐 **交互式编辑**：生成HTML可在浏览器中查看和调整剪辑
 
 ## 📖 使用场景
 
@@ -228,6 +230,61 @@ A: 支持 FFmpeg/MoviePy 支持的所有格式（MP4, AVI, MOV等）
 
 **Q: 处理速度慢怎么办？**
 A: 使用更小的模型（tiny/base），或安装 GPU 加速
+
+---
+
+## 🎬 导出到专业软件
+
+想在DaVinci Resolve、Final Cut Pro等专业软件中手动调整？使用导出功能！
+
+### 支持的导出格式
+
+| 格式 | 用途 | 兼容软件 |
+|------|------|----------|
+| **HTML** | 交互式预览 | 浏览器 |
+| **EDL** | DaVinci Resolve | DaVinci Resolve |
+| **XML** | Final Cut Pro / Premiere | FCP / Premiere |
+| **JSON** | 开发使用 | 自定义 |
+
+### 基本用法
+
+```bash
+# 生成交互式HTML（推荐）
+python main.py export input.mp4 --format html
+
+# 导出EDL给DaVinci
+python main.py export input.mp4 --format edl -o project.edl
+
+# 导出XML给Final Cut Pro
+python main.py export input.mp4 --format xml -o project.xml
+```
+
+### 详细说明
+
+查看 [EXPORT_GUIDE.md](EXPORT_GUIDE.md) 了解完整的使用教程，包括：
+- 如何在DaVinci Resolve中导入EDL
+- 如何在Final Cut Pro中使用XML
+- 如何使用交互式HTML调整剪辑
+
+### 快速示例
+
+```bash
+# 1. 生成交互式报告
+python main.py export video.mp4 --format html
+
+# 2. 在浏览器中查看
+# 打开 video_editor.html
+
+# 3. 如果满意，导出EDL到DaVinci
+python main.py export video.mp4 --format edl -o timeline.edl
+
+# 4. 在DaVinci中导入
+# File → Import Timeline → timeline.edl
+
+# 5. 手动调整后导出最终视频
+```
+
+---
 
 ## 🛠️ 开发
 
