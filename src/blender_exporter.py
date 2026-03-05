@@ -8,6 +8,9 @@ from typing import List, Dict, Optional
 from pathlib import Path
 import logging
 
+# 导入增强的可拖拽HTML导出器
+from draggable_html_exporter import create_draggable_html
+
 logger = logging.getLogger(__name__)
 
 
@@ -275,7 +278,7 @@ print(f"项目已保存")
     def create_interactive_html(self, video_path: str, timeline: List[Dict],
                                repeats: List[Dict], output_path: str) -> str:
         """
-        创建交互式HTML报告，可在浏览器中查看和调整剪辑
+        创建增强的可拖拽时间线HTML界面
 
         Args:
             video_path: 视频路径
@@ -286,102 +289,390 @@ print(f"项目已保存")
         Returns:
             HTML文件路径
         """
+        logger.info(f"创建可拖拽HTML界面: {output_path}")
+        return create_draggable_html(video_path, timeline, repeats, output_path)
         html_content = f'''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI视频剪辑器 - 交互式编辑</title>
+    <title>AI视频剪辑器 - 可拖拽时间线</title>
     <style>
+        * {{
+            box-sizing: border-box;
+        }}
         body {{
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #1e1e1e;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #d4d4d4;
+            min-height: 100vh;
         }}
         .container {{
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }}
         h1 {{
             color: #4ec9b0;
-            border-bottom: 2px solid #4ec9b0;
-            padding-bottom: 10px;
+            border-bottom: 3px solid #4ec9b0;
+            padding-bottom: 15px;
+            margin-top: 0;
+            font-size: 28px;
         }}
         .video-section {{
-            background: #2d2d2d;
-            padding: 20px;
+            background: #1e1e1e;
+            padding: 25px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            border: 1px solid #3d3d3d;
+        }}
+        .video-wrapper {{
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
         }}
         video {{
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
+            display: block;
+            margin: 0 auto;
             border-radius: 4px;
         }}
-        .timeline {{
-            background: #2d2d2d;
-            padding: 20px;
-            border-radius: 8px;
-        }}
-        .timeline-item {{
+        .video-controls {{
             display: flex;
-            align-items: center;
-            padding: 10px;
-            margin: 5px 0;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }}
+        .video-controls button {{
+            background: #3d3d3d;
+            color: #fff;
+            border: 1px solid #4ec9b0;
+            padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
-            transition: background 0.3s;
+            font-size: 13px;
+            transition: all 0.3s;
         }}
-        .timeline-item:hover {{
+        .video-controls button:hover {{
+            background: #4ec9b0;
+            color: #1e1e1e;
+        }}
+        .timeline-editor {{
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid #3d3d3d;
+        }}
+        .timeline-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }}
+        .timeline-header h2 {{
+            margin: 0;
+            color: #4ec9b0;
+            font-size: 20px;
+        }}
+        .timeline-visual {{
+            position: relative;
+            height: 120px;
+            background: #000;
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+            border: 2px solid #3d3d3d;
+        }}
+        .timeline-track {{
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: stretch;
+        }}
+        .timeline-segment {{
+            position: relative;
+            border-right: 2px solid #000;
+            transition: all 0.3s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            overflow: hidden;
+            padding: 5px;
+        }}
+        .timeline-segment:hover {{
+            filter: brightness(1.2);
+            transform: scaleY(1.05);
+        }}
+        .timeline-segment.keep {{
+            background: linear-gradient(135deg, #4ec9b0 0%, #3db8a0 100%);
+            color: #000;
+        }}
+        .timeline-segment.cut {{
+            background: linear-gradient(135deg, #f44747 0%, #e33939 100%);
+            color: #fff;
+            opacity: 0.7;
+        }}
+        .timeline-segment.selected {{
+            box-shadow: 0 0 0 3px #fff, 0 0 20px rgba(78, 201, 176, 0.8);
+            z-index: 10;
+        }}
+        .timeline-segment .segment-label {{
+            text-align: center;
+            word-break: break-word;
+            hyphens: auto;
+        }}
+        .timeline-ruler {{
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 25px;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: flex-end;
+            font-size: 11px;
+            color: #888;
+        }}
+        .ruler-mark {{
+            position: absolute;
+            bottom: 0;
+            height: 15px;
+            border-left: 1px solid #666;
+            padding-left: 3px;
+        }}
+        .playhead {{
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff6b6b;
+            z-index: 100;
+            cursor: ew-resize;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+        }}
+        .playhead::before {{
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -4px;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 8px solid #ff6b6b;
+        }}
+        .segment-list {{
+            max-height: 400px;
+            overflow-y: auto;
+            background: #000;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #3d3d3d;
+        }}
+        .segment-item {{
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }}
+        .segment-item:hover {{
             background: #3d3d3d;
+            transform: translateX(5px);
         }}
-        .timeline-item.keep {{
+        .segment-item.keep {{
             border-left: 4px solid #4ec9b0;
         }}
-        .timeline-item.cut {{
+        .segment-item.cut {{
             border-left: 4px solid #f44747;
             opacity: 0.7;
         }}
-        .timeline-item .time {{
-            min-width: 120px;
-            font-family: monospace;
+        .segment-item.selected {{
+            background: #3d3d3d;
+            border-color: #4ec9b0;
         }}
-        .timeline-item .content {{
+        .segment-item .segment-time {{
+            min-width: 150px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #4ec9b0;
+        }}
+        .segment-item .segment-content {{
             flex: 1;
+            font-size: 14px;
+            padding: 0 15px;
         }}
-        .timeline-item .action {{
-            min-width: 80px;
+        .segment-item .segment-action {{
+            min-width: 100px;
             text-align: center;
             font-weight: bold;
+            font-size: 13px;
+        }}
+        .segment-item .segment-duration {{
+            min-width: 80px;
+            text-align: right;
+            font-family: 'Consolas', monospace;
+            color: #888;
+            font-size: 12px;
         }}
         .action-keep {{ color: #4ec9b0; }}
         .action-cut {{ color: #f44747; }}
         .controls {{
-            background: #2d2d2d;
+            background: #1e1e1e;
             padding: 20px;
             border-radius: 8px;
             margin-top: 20px;
+            border: 1px solid #3d3d3d;
+        }}
+        .controls h2 {{
+            margin-top: 0;
+            color: #4ec9b0;
+            font-size: 18px;
+        }}
+        .controls-row {{
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
         }}
         button {{
-            background: #4ec9b0;
+            background: linear-gradient(135deg, #4ec9b0 0%, #3db8a0 100%);
             color: #1e1e1e;
             border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+            padding: 12px 24px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
-            margin-right: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(78, 201, 176, 0.3);
         }}
         button:hover {{
-            background: #3db8a0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(78, 201, 176, 0.4);
+        }}
+        button:active {{
+            transform: translateY(0);
+        }}
+        button.secondary {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }}
+        button.secondary:hover {{
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }}
         .stats {{
-            background: #2d2d2d;
-            padding: 15px;
+            background: #1e1e1e;
+            padding: 20px;
             border-radius: 8px;
             margin-top: 20px;
+            border: 1px solid #3d3d3d;
+        }}
+        .stats-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }}
+        .stat-item {{
+            background: #3d3d3d;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }}
+        .stat-value {{
+            font-size: 28px;
+            font-weight: bold;
+            color: #4ec9b0;
+            margin-bottom: 5px;
+        }}
+        .stat-label {{
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+        }}
+        .edit-panel {{
+            background: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #4ec9b0;
+        }}
+        .edit-panel h3 {{
+            margin-top: 0;
+            color: #4ec9b0;
+        }}
+        .edit-controls {{
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }}
+        .edit-controls input[type="number"] {{
+            background: #1e1e1e;
+            border: 1px solid #4ec9b0;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            width: 100px;
+        }}
+        .hidden {{ display: none; }}
+        .modal {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }}
+        .modal-content {{
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            text-align: center;
+            border: 2px solid #4ec9b0;
+        }}
+        .modal-content h2 {{
+            color: #4ec9b0;
+            margin-top: 0;
+        }}
+        .spinner {{
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4ec9b0;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }}
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
         }}
     </style>
 </head>
