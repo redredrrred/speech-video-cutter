@@ -1,32 +1,4 @@
-"""
-Enhanced HTML Exporter with Draggable Timeline
-"""
-
-import os
-import json
-from typing import List, Dict
-
-
-def create_draggable_html(video_path: str, timeline: List[Dict],
-                          repeats: List[Dict], output_path: str) -> str:
-    """
-    创建增强的可拖拽时间线HTML界面
-
-    Args:
-        video_path: 视频路径
-        timeline: 剪辑时间线
-        repeats: 重复检测结果
-        output_path: HTML输出路径
-
-    Returns:
-        HTML文件路径
-    """
-
-    # 将timeline数据转换为JSON字符串，以便在HTML中使用
-    timeline_json = json.dumps(timeline, ensure_ascii=False)
-    video_path_abs = os.path.abspath(video_path).replace(os.sep, '/')
-
-    html_template = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -534,8 +506,8 @@ def create_draggable_html(video_path: str, timeline: List[Dict],
 
     <script>
         // 时间线数据
-        const timelineData = ''' + timeline_json + ''';
-        const videoPath = "''' + video_path_abs + '''";
+        const timelineData = [{"action": "keep", "start": 0.7800000000000022, "end": 9.62, "text": "然后我拍这条视频的时候"}, {"action": "keep", "start": 12.880000000000003, "end": 31.22, "text": "然后我拍这条视频的时候"}, {"action": "cut", "start": 40.63999999999999, "end": 43.7, "text": "然后我就突然的一股无名火"}, {"action": "keep", "start": 43.7, "end": 44.68, "text": "我只有不拍"}, {"action": "cut", "start": 46.04, "end": 49.58, "text": "然后我就突然的一股无名火"}, {"action": "keep", "start": 49.58, "end": 51.64, "text": "然后我就突然的一股无名火"}, {"action": "keep", "start": 52.699999999999996, "end": 54.58, "text": "我就不想拍鸡汤"}, {"action": "cut", "start": 55.459999999999994, "end": 57.44, "text": "就不想拍腿腿的"}, {"action": "cut", "start": 58.06, "end": 59.74, "text": "我就想拍腿腿的"}, {"action": "cut", "start": 61.18, "end": 64.5, "text": "我就想拍腿腿的人生"}, {"action": "keep", "start": 64.5, "end": 66.72, "text": "我就想拍一条腿腿的记录"}, {"action": "cut", "start": 68.52000000000001, "end": 72.56, "text": "然后我又陷入了"}, {"action": "keep", "start": 72.56, "end": 74.2, "text": "然后我又陷入了另一个烦恼"}, {"action": "keep", "start": 74.8, "end": 78.22, "text": "就是我"}, {"action": "keep", "start": 79.34, "end": 80.9, "text": "腿腿的记录"}, {"action": "keep", "start": 81.44, "end": 82.94, "text": "我真的敢发吗"}, {"action": "keep", "start": 84.52000000000001, "end": 86.94, "text": "我想我是没有这个勇气发出去的"}, {"action": "keep", "start": 103.91999999999999, "end": 109.72, "text": "还真是"}, {"action": "keep", "start": 112.46000000000001, "end": 114.78, "text": "无故这个灯光确实挺美的"}, {"action": "keep", "start": 117.29999999999998, "end": 126.82, "text": "就是腿肺又不是氛围"}, {"action": "keep", "start": 127.53999999999999, "end": 129.78, "text": "其实有很多的痘痘"}, {"action": "cut", "start": 130.66, "end": 131.64, "text": "而且精神的不好"}, {"action": "keep", "start": 131.64, "end": 135.1, "text": "而且精神非常地不好"}, {"action": "keep", "start": 140.88, "end": 143.1, "text": "但是我一想到还要减这条视频"}];
+        const videoPath = "C:/Users/lenovo/Desktop/飞书20260305-143742.qt";
         const video = document.getElementById('videoPlayer');
         let selectedSegment = null;
         let isPlaying = false;
@@ -930,12 +902,12 @@ def create_draggable_html(video_path: str, timeline: List[Dict],
         }}
 
         function showExportHelp() {{
-            alert(`导出其他格式的命令行用法:\\n\\n` +
-                  `EDL格式 (DaVinci Resolve):\\n` +
-                  `python main.py export video.mp4 --format edl -o project.edl\\n\\n` +
-                  `XML格式 (Final Cut Pro/Premiere):\\n` +
-                  `python main.py export video.mp4 --format xml -o project.xml\\n\\n` +
-                  `HTML格式 (可拖拽界面):\\n` +
+            alert(`导出其他格式的命令行用法:\n\n` +
+                  `EDL格式 (DaVinci Resolve):\n` +
+                  `python main.py export video.mp4 --format edl -o project.edl\n\n` +
+                  `XML格式 (Final Cut Pro/Premiere):\n` +
+                  `python main.py export video.mp4 --format xml -o project.xml\n\n` +
+                  `HTML格式 (可拖拽界面):\n` +
                   `python main.py export video.mp4 --format html -o editor.html`);
         }}
 
@@ -978,9 +950,3 @@ def create_draggable_html(video_path: str, timeline: List[Dict],
     </script>
 </body>
 </html>
-'''
-
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_template)
-
-    return output_path
