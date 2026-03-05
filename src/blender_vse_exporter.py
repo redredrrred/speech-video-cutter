@@ -72,39 +72,35 @@ Blender VSE (视频序列编辑器) 脚本
 
 使用方法:
 1. 打开Blender
-2. 切换到Video Editing工作区
-3. Window → Toggle System Console
-4. 在System Console中运行: Scripting → Open → 选择此脚本
-   或者直接在Scripting工作区中运行此脚本
+2. 切换到Video Editing工作区（顶部标签选择"Video Editing"）
+3. Window → Toggle System Console (查看系统控制台)
+4. 切换到Scripting工作区
+5. 点击Open，选择此脚本
+6. 点击Run Script (或按Alt+P)
 """
 
 import bpy
 import os
 import json
 
-# 清空当前场景
-bpy.ops.object.select_all(action='SELECT')
-bpy.ops.object.delete()
+print("开始设置Blender VSE项目...")
 
-# 切换到视频编辑工作区
-if 'Video Editing' not in [ws.name for ws in bpy.data.workspaces]:
-    # 创建新的视频编辑工作区
-    workspace = bpy.data.workspaces.new('Video Editing')
-    workspace.screens[0].areas[0].type = 'VIDEO_EDITOR'
-else:
-    # 使用现有的视频编辑工作区
-    for window in bpy.context.window_manager.windows:
-        for area in window.screen.areas:
-            if area.type == 'VIEW_3D':
-                area.type = 'VIDEO_EDITOR'
-                break
+# 切换当前区域到视频编辑模式
+for window in bpy.context.window_manager.windows:
+    for area in window.screen.areas:
+        if area.type == 'VIEW_3D':
+            area.type = 'VIDEO_EDITOR'
+            print(f"✓ 已切换到视频编辑模式")
+            break
 
 # 确保当前场景有序列编辑器
-if not bpy.context.scene.sequence_editor:
-    bpy.context.scene.sequence_editor_create()
+scene = bpy.context.scene
+if not scene.sequence_editor:
+    scene.sequence_editor_create()
+    print(f"✓ 已创建序列编辑器")
 
 # 获取序列编辑器
-seq_editor = bpy.context.scene.sequence_editor
+seq_editor = scene.sequence_editor
 
 # 视频文件路径
 VIDEO_PATH = r"{video_path_abs}"
@@ -122,6 +118,10 @@ print(f"="*60)
 
 # 添加视频到VSE
 try:
+    # 清空现有的序列（如果有）
+    if seq_editor.sequences_all:
+        seq_editor.sequences_all.remove(seq_editor.sequences_all[0])
+
     # 导入视频
     bpy.ops.sequencer.movie_strip_add(filepath=VIDEO_PATH)
     main_strip = seq_editor.sequences_all[-1]
@@ -137,8 +137,10 @@ try:
 
     print(f"\\n开始处理剪辑时间线...")
 
+    # 清空现有标记
+    seq_editor.markers.clear()
+
     # 创建标记点用于剪辑
-    marker_frame = 0
     keep_count = 0
     cut_count = 0
 
@@ -147,12 +149,14 @@ try:
         end_frame = int(item['end'] * fps)
 
         if item['action'] == 'keep':
-            # 保留的片段 - 添加绿色标记
-            marker = seq_editor.markers.new(frame=start_frame, name=f"保留: {{item.get('text', '')[:20]}}")
+            # 保留的片段 - 添加标记
+            marker_name = f"保留: {{item.get('text', '')[:15]}}"
+            marker = seq_editor.markers.new(frame=start_frame, name=marker_name)
             keep_count += 1
         else:
-            # 剪掉的片段 - 添加红色标记
-            marker = seq_editor.markers.new(frame=start_frame, name=f"剪掉: {{item.get('text', '')[:20]}}")
+            # 剪掉的片段 - 添加标记
+            marker_name = f"剪掉: {{item.get('text', '')[:15]}}"
+            marker = seq_editor.markers.new(frame=start_frame, name=marker_name)
             cut_count += 1
 
     print(f"\\n剪辑标记已创建:")
@@ -182,17 +186,19 @@ try:
 
     print(f"\\n✓ Blender VSE项目设置完成!")
     print(f"\\n下一步操作:")
-    print(f"1. 在时间线中查看彩色标记")
-    print(f"2. 绿色标记 = 保留的内容")
-    print(f"3. 红色标记 = 需要剪掉的内容")
-    print(f"4. 可以手动调整剪辑点")
-    print(f"5. 导出最终视频: File → Export → Movie")
+    print(f"1. 在时间线中查看标记")
+    print(f"2. 标记指示了AI建议的剪辑点")
+    print(f"3. 可以手动调整剪辑点")
+    print(f"4. 按空格键播放预览")
+    print(f"5. 导出: File → Export → Movie")
 
 except Exception as e:
     print(f"✗ 错误: {{e}}")
     import traceback
     traceback.print_exc()
 
+print(f"="*60)
+print("脚本执行完成！")
 print(f"="*60)
 '''
 
