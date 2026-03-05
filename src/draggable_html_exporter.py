@@ -558,7 +558,7 @@ def create_draggable_html(video_path: str, timeline: List[Dict],
 
             timelineData.forEach((item, index) => {{
                 const segment = document.createElement('div');
-                segment.className = `timeline-segment ${{item.action}}`;
+                segment.className = `timeline-segment ${{{item.action}}}`;
                 if (selectedSegment === index) {{
                     segment.classList.add('selected');
                 }}
@@ -683,7 +683,7 @@ def create_draggable_html(video_path: str, timeline: List[Dict],
 
             filteredData.forEach(item => {{
                 const div = document.createElement('div');
-                div.className = `segment-item ${{item.action}}`;
+                div.className = `segment-item ${{{item.action}}}`;
                 if (selectedSegment === item.index) {{
                     div.classList.add('selected');
                 }}
@@ -696,10 +696,10 @@ def create_draggable_html(video_path: str, timeline: List[Dict],
                 const text = item.text || '(无文本)';
 
                 div.innerHTML = `
-                    <div class="segment-time">${{start}} - ${{end}}</div>
-                    <div class="segment-content">{{${text}}}</div>
-                    <div class="segment-duration">${{duration}}s</div>
-                    <div class="segment-action ${{actionClass}}">${{action}}</div>
+                    <div class="segment-time">${{{start}}}} - ${{{end}}}</div>
+                    <div class="segment-content">${{{{text}}}}</div>
+                    <div class="segment-duration">${{{{duration}}}}s</div>
+                    <div class="segment-action ${{{actionClass}}}">${{{{action}}}}</div>
                 `;
 
                 div.onclick = () => selectSegment(item.index);
@@ -849,7 +849,7 @@ def create_draggable_html(video_path: str, timeline: List[Dict],
         function formatTime(seconds) {{
             const mins = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
-            return `${{mins.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
+            return `${{{{mins.toString().padStart(2, '0')}}}}:${{{{secs.toString().padStart(2, '0')}}}}`;
         }}
 
         // 播放控制
