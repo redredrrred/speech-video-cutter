@@ -1,0 +1,43 @@
+# AI智能口误去除工具 - 配置文件
+
+# 语音识别配置
+speech:
+  model: "base"  # tiny/base/small/medium/large
+  language: "zh"  # zh=中文, en=英文
+  device: "cpu"  # cpu/cuda
+
+# 重复检测配置
+detection:
+  similarity_threshold: 0.7      # 相似度阈值 (0-1)，越高越严格
+  max_time_gap: 10.0             # 最大时间间隔（秒），超过此时间不检测重复
+  min_sentence_length: 5         # 最小句子长度（字符），太短的不检测
+
+# 流畅度分析配置
+analysis:
+  pause_threshold: 0.5           # 停顿检测阈值（秒）
+  filler_words:                  # 语气词列表
+    - "呃"
+    - "啊"
+    - "那个"
+    - "然后"
+    - "就是"
+    - "嗯"
+  stutter_pattern: "(.)\\1+"     # 结巴检测正则表达式
+  min_speaking_rate: 2.0         # 最小语速（字/秒）
+  max_speaking_rate: 8.0         # 最大语速（字/秒）
+
+# 剪辑配置
+editing:
+  keep_pauses: true              # 保留停顿/静音
+  preserve_strategy: "last"      # 保留策略: last/longest/smoothest
+  output_format: "mp4"           # 输出格式
+  quality: "high"                # 视频质量
+  codec: "libx264"               # 视频编码器
+  audio_codec: "aac"             # 音频编码器
+
+# 输出配置
+output:
+  save_subtitle: true            # 保存字幕文件
+  generate_report: true          # 生成剪辑报告
+  report_format: "txt"           # 报告格式: txt/json
+  verbose: true                  # 详细输出

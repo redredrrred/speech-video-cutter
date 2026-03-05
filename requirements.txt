@@ -1,0 +1,23 @@
+# AI智能口误去除工具 - 依赖包
+
+# 视频处理
+moviepy>=2.0.0
+
+# 语音识别
+openai-whisper
+
+# 文本相似度计算
+python-Levenshtein
+
+# 配置管理
+pyyaml
+
+# 命令行界面
+click
+tqdm
+
+# 音频处理（可选，用于更精确的停顿检测）
+librosa
+
+# 日志
+colorlog
