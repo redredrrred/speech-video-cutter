@@ -222,7 +222,7 @@ def info(input_video):
 
 @main.command()
 @click.argument('input_video', type=click.Path(exists=True))
-@click.option('--format', default='html', type=click.Choice(['html', 'edl', 'xml', 'json']),
+@click.option('--format', default='html', type=click.Choice(['html', 'edl', 'xml', 'json', 'blender']),
               help='导出格式')
 @click.option('--output', '-o', help='输出文件路径')
 @click.option('--similarity', default=0.7, type=float, help='相似度阈值')
@@ -234,6 +234,7 @@ def export(input_video, format, output, similarity, model):
 
     示例:
         ai-cutter export input.mp4 --format html
+        ai-cutter export input.mp4 --format blender
         ai-cutter export input.mp4 --format xml -o project.xml
         ai-cutter export input.mp4 --format edl -o project.edl
     """
@@ -248,6 +249,8 @@ def export(input_video, format, output, similarity, model):
                 output = str(input_path.parent / f"{input_path.stem}_project.xml")
             elif format == 'edl':
                 output = str(input_path.parent / f"{input_path.stem}_project.edl")
+            elif format == 'blender':
+                output = str(input_path.parent / f"{input_path.stem}_blender_project")
             else:
                 output = str(input_path.parent / f"{input_path.stem}_timeline.json")
 
@@ -304,6 +307,22 @@ def export(input_video, format, output, similarity, model):
             with open(output, 'w', encoding='utf-8') as f:
                 json.dump({'timeline': timeline, 'repeats': repeats}, f, indent=2, ensure_ascii=False)
             click.echo(f"   [OK] JSON已创建: {output}")
+
+        elif format == 'blender':
+            click.echo(f"[*] 导出Blender VSE项目...")
+            from blender_vse_exporter import create_blender_vse_project
+
+            project_name = Path(input_video).stem + "_Blender_Project"
+            script_path = create_blender_vse_project(input_video, timeline, output, project_name)
+
+            click.echo(f"   [OK] Blender项目已创建: {output}")
+            click.echo(f"   [OK] 主脚本: {script_path}")
+            click.echo(f"\n使用方法:")
+            click.echo(f"   1. 下载并安装Blender: https://www.blender.org/download/")
+            click.echo(f"   2. 打开Blender，切换到Scripting工作区")
+            click.echo(f"   3. 运行脚本: {project_name}_blender_script.py")
+            click.echo(f"   4. 切换到Video Editing工作区查看剪辑标记")
+            click.echo(f"   5. 详细说明请查看: {output}/{project_name}_README.txt")
 
         click.echo(f"\n完成！")
 
